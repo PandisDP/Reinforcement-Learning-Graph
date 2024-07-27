@@ -4,12 +4,48 @@ import matplotlib.pyplot as plt
 import numpy as np
 import networkx as nx
 from sklearn import metrics
+import pandas as pd
 
 class ProcessDeep:
     def __init__(self):
         pass
-    import networkx as nx
 
+    def __reward_distribution(self,edges,method):
+        if method == 'mean':
+            return np.mean([edge[2]['reward'] for edge in edges])
+        elif method == 'max':
+            return max([edge[2]['reward'] for edge in edges])
+        elif method == 'min':
+            return min([edge[2]['reward'] for edge in edges])
+        elif method == 'sum':
+            return sum([edge[2]['reward'] for edge in edges])
+        else:
+            raise ValueError('Método no válido. Métodos válidos: mean, max, min, sum, path_reward_weighted')
+
+    def compute_pagerank_with_weights(self,graph, alpha=0.85):
+        self.transform_rewards_to_weights(graph)
+        pagerank_scores = nx.pagerank(graph, alpha=alpha, weight='weight')
+        df = pd.DataFrame(list(pagerank_scores.items()), columns=['Node', 'PageRank'])
+        df.to_csv('pagerank_nodes', index=False)
+        return pagerank_scores
+
+    def transform_rewards_to_weights(self,graph):
+        # Transform the negative rewards into weights
+        min_reward = min(data['reward'] for _, _, data in graph.edges(data=True))
+        # if the minimum reward is negative, we adjust all rewards to be non-negative
+        if min_reward < 0:
+            adjustment = -min_reward
+            for u, v, data in graph.edges(data=True):
+                data['weight'] = max(0, data['reward'] + adjustment)
+        else:
+            for u, v, data in graph.edges(data=True):
+                data['weight'] = max(0, data['reward'])
+        # Normaalice the weights
+        for node in graph.nodes:
+            total_weight = sum(data['weight'] for _, _, data in graph.in_edges(node, data=True))
+            if total_weight > 0:
+                for _, target, data in graph.in_edges(node, data=True):
+                    data['weight'] /= total_weight
     def __node_rewards_back(self,graph):
         leaf_nodes = {node for node in graph.nodes() if graph.out_degree(node) == 0}
         node_values = {}  
@@ -37,7 +73,7 @@ class ProcessDeep:
                                 ,n_clusters=10,method='mean'):
         q_graph_learn= q_graph_obj.load_q_table(qtable_filename_base)
         node_rewards = {}
-        if method != 'path_reward_weighted':
+        if method != 'page_rank':
             for node in q_graph_learn.G.nodes():
                 edges = q_graph_learn.G.edges(node, data=True)
                 if edges:
@@ -46,7 +82,7 @@ class ProcessDeep:
                 else:
                     node_rewards[node] = 0  # Si el nodo no tiene aristas, asignamos una recompensa de 0
         else:
-            node_rewards = self.__node_rewards_back(q_graph_learn.G)            
+            node_rewards = self.compute_pagerank_with_weights(q_graph_learn.G, alpha=0.85)           
         rewards = np.array(list(node_rewards.values())).reshape(-1, 1)
         rewards_normalized = (rewards - rewards.min()) / (rewards.max() - rewards.min())
         # Method of the Elbow
@@ -81,7 +117,7 @@ class ProcessDeep:
         # 1. We calculate the average reward for each node
         q_graph_learn= graph_obj.load_q_table(qtable_filename_base)
         node_rewards = {}
-        if method != 'path_reward_weighted':
+        if method != 'page_rank':
             for node in q_graph_learn.G.nodes():
                 edges = q_graph_learn.G.edges(node, data=True)
                 if edges:
@@ -90,8 +126,7 @@ class ProcessDeep:
                 else:
                     node_rewards[node] = 0  # If the node has no edges, we assign a reward of 0
         else:
-            node_rewards = self.__node_rewards_back(q_graph_learn.G)  
-        print(node_rewards)              
+            node_rewards = self.compute_pagerank_with_weights(q_graph_learn.G, alpha=0.85)          
         # 2. We normalize the rewards
         rewards = np.array(list(node_rewards.values())).reshape(-1, 1)
         rewards_normalized = (rewards - rewards.min()) / (rewards.max() - rewards.min())
@@ -104,14 +139,15 @@ class ProcessDeep:
         for i, cluster in enumerate(set(clusters)):
             nodes_in_cluster = [node for node, cluster_id in
                                 zip(q_graph_learn.G.nodes(), clusters) if cluster_id == cluster]
+            #node_sizes = [node_rewards[node] * 1000 for node in nodes_in_cluster] # Node size is proportional to the reward
             nx.draw_networkx_nodes(q_graph_learn.G, pos, nodelist=nodes_in_cluster,
-                                    node_color=plt.cm.tab10(i), node_size=10)
+                                    node_color=plt.cm.tab10(i), node_size=300)
         nx.draw_networkx_edges(q_graph_learn.G, pos)
         plt.savefig('Deep_Analysis/Clusters.png', format='png', dpi=300)     
         
     def graphics_network(self,graph_obj,qtable_filename_base='q_table.joblib'):
         if qtable_filename_base != '':
-            self.empty_path('Deep_Analysis')
+            #self.empty_path('Deep_Analysis')
             q_graph_learn= graph_obj.load_q_table(qtable_filename_base)
             max_reward = max((data['reward'] for u, v, data in q_graph_learn.G.edges(data=True)))
             min_reward = min((data['reward'] for u, v, data in q_graph_learn.G.edges(data=True)))
@@ -123,6 +159,8 @@ class ProcessDeep:
             #pos = nx.spring_layout(q_graph_learn.G, weight='reward',scale=1,iterations=100)
             plt.figure(figsize=(12, 8)) 
             nx.draw(q_graph_learn.G,pos,with_labels=False, node_color='skyblue', 
-                    node_size=20, edge_color='k', linewidths=0.1, font_size=5)
+                    node_size=50, edge_color='k', linewidths=0.05, font_size=5)
             plt.title('Visualización del Grafo de Aprendizaje Q')
-            plt.savefig('Deep_Analysis/Learning_graph_Q.png', format='png', dpi=300)         
+            plt.savefig('Deep_Analysis/Learning_graph_Q.png', format='png', dpi=300)
+            print('Number of States:',q_graph_learn.G.number_of_nodes())
+            print('Number of Relationsip betewen States:',q_graph_learn.G.number_of_edges())         

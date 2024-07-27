@@ -157,8 +157,6 @@ class Field:
             if not self.item_in_car:
                 return -10,False
             elif self.item_dropoff != (x,y):
-                self.item_pickup= (x,y)
-                self.item_in_car = False
                 return -10,False
             else:
                 self.item_in_car = False
@@ -214,8 +212,6 @@ class Field:
                 if not item_in_car:
                     return -10,False,virtual_position,item_in_car,item_pickup 
                 elif item_dropoff != (x,y):
-                    item_pickup= (x,y)
-                    item_in_car = False
                     return -10,False,virtual_position,item_in_car,item_pickup 
                 else:
                     item_in_car = False
