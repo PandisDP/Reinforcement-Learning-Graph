@@ -59,8 +59,55 @@ class QLearning:
         self.steps_training_average=steps_total/n_iterations
         if save_learning:
             self.save_q_table(self.q_graph) 
-        self.reset_qtable      
+        self.reset_qtable()  
 
+    def find_path_in_memory(self):
+        init_state,pickup_state,dropff_state= self.field.get_path_status()
+        if self.q_graph.find_state_bool(init_state) and self.q_graph.find_state_bool(pickup_state) and \
+            self.q_graph.find_state_bool(dropff_state):    
+            return self.q_graph.find_best_path(init_state,pickup_state,dropff_state)
+        else:
+            return [],[]   
+    def find_all_path_in_memory(self):
+        init_state,pickup_state,dropff_state= self.field.get_path_status()
+        if self.q_graph.find_state_bool(init_state) and self.q_graph.find_state_bool(pickup_state) and \
+            self.q_graph.find_state_bool(dropff_state):    
+            return self.q_graph.all_paths_with_intermediate(init_state,pickup_state,dropff_state)
+        else:
+            return []     
+
+    def dynamic_predict(self,qtable_filename_base='q_table.joblib',hyperparams_file='params'
+                    ,re_training_epi=1000, print_episode=False):
+        if qtable_filename_base != '':
+            self.reset_qtable()
+            self.q_graph=self.load_q_table(qtable_filename_base)
+            hyperparams= self.load_q_table(hyperparams_file)
+            self.epsilon=hyperparams['epsilon']
+            self.alpha=hyperparams['alpha']
+            self.gamma=hyperparams['gamma']
+            path_memory,rewards_memory= self.find_path_in_memory()
+            if len(path_memory)>0 and sum(rewards_memory)>0:   
+                steps= len(path_memory)
+                self.total_reward= sum(rewards_memory)
+                states_path= path_memory
+                self.reset_qtable()
+                if print_episode:
+                    self.field.graphics(states_path,f"episode {steps}")
+                    self.total_reward_training.append(self.total_reward)
+                    self.graphics_reward_training(f"rewars {steps}")  
+                return steps,self.total_reward,states_path 
+            else:
+                print('No path in memory or path with negative rewards')
+                self.training(re_training_epi,self.epsilon,self.alpha,self.gamma,
+                            self.min_epsilon,self.decay_epsilon,True)
+                self.q_graph=self.load_q_table(qtable_filename_base)
+                var,steps,__=self.learning_process(copy.deepcopy(self.field),self.epsilon,self.alpha,self.gamma
+                                                    ,self.min_epsilon,self.decay_epsilon,print_episode)
+                states_path= var.allposicions
+                self.reset_qtable()
+                return steps,self.total_reward,states_path
+        else:
+            return 0,0,[]   
     def predict(self,qtable_filename_base='q_table.joblib',hyperparams_file='params',re_training=False 
                 ,re_training_epi=1000, print_episode=False):
         if qtable_filename_base != '':
@@ -86,7 +133,7 @@ class QLearning:
                 return steps,self.total_reward,states_path
         else:
             return 0,0,[]   
-
+        
     def convergence(self, lst_qtable, threshold=0.01,steps_evaluations=5):
         if len(lst_qtable) < steps_evaluations:
             return False
@@ -104,9 +151,10 @@ class QLearning:
             field.graphics(field.allposicions,f"episode {steps}") 
         while not done:
             state= field.get_state() #get the id of the state of game
-            lst_states,lst_actions,lst_rewards= field.get_possibles_states()
+            lst_states,lst_actions,__,lst_positions= field.get_possibles_states()
+            state_position= field.position
             lst_rewards=[0,0,0,0,0,0]
-            self.q_graph.create_state(state,lst_actions,lst_states,lst_rewards)
+            self.q_graph.create_state(state,state_position,lst_actions,lst_states,lst_rewards,lst_positions)
 
             if random.uniform(0,1)<epsilon:
                 action= random.randint(0,field.number_of_actions-1)
@@ -118,8 +166,10 @@ class QLearning:
             if self.q_graph.find_state_to_next_state(next_state):
                 _,_,best_next_reward= self.q_graph.get_best_action(next_state)
             else:
-                lst_states,lst_actions,_= field.get_possibles_states()
-                self.q_graph.create_state(next_state,lst_actions,lst_states,lst_rewards)
+                lst_states,lst_actions,__,lst_positions= field.get_possibles_states()
+                state_position= field.position
+                lst_rewards=[0,0,0,0,0,0]
+                self.q_graph.create_state(next_state,state_position,lst_actions,lst_states,lst_rewards,lst_positions)
                 _,_,best_next_reward= self.q_graph.get_best_action(next_state) 
             current_q= self.q_graph.get_value_state_action(state,action)
             update_reward= (1-alpha)*current_q+alpha*(reward+gamma*best_next_reward-current_q)
@@ -156,7 +206,6 @@ class QLearning:
         del self.q_graph
         gc.collect()
         self.q_graph = Q_Graph()
-        #self.q_table = np.zeros((self.number_of_states, self.number_of_actions))
     
     def save_q_table(self,q_table, filename='q_table.joblib'):
         dump(q_table, filename)

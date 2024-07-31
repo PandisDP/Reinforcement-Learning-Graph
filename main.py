@@ -47,6 +47,14 @@ def qlearning_predict(size, item_pickup, item_dropoff, start_position, zones_blo
     #field.graphics(status_all,'Path_Complete')
     return steps,reward,status_all
 
+def qlearning_predict_update(size, item_pickup, item_dropoff, start_position, zones_block ,print_episode=False,re_training_epi=1000):
+    field = Field(size,item_pickup,item_dropoff,start_position,zones_block,'Episodes')
+    field.empty_predict_data()
+    qlearning= QLearning(field,'Episodes')
+    steps,reward,status_all= qlearning.dynamic_predict('q_table.joblib','best_hiperparameters.joblib',re_training_epi,print_episode)
+    #field.graphics(status_all,'Path_Complete')
+    return steps,reward,status_all
+
 def Analysis_Prediction(iterations,size, item_pickup, item_dropoff, start_position, zones_block ,print_episode=False):
     list_solutions=[]
     for i in range(iterations):
@@ -95,37 +103,22 @@ def qtable_analysis(name_file='q_table.joblib'):
     field = Field(size,item_pickup,item_dropoff,start_position,zones_block,'Episodes')
     qlearning_predict= QLearning(field,'Episodes')
     deep_analysis= ProcessDeep()
-    #qlearning_predict.analysys_process_learning('q_table.joblib')
-    #deep_analysis.graphics_network(qlearning_predict,name_file)
+    deep_analysis.graphics_network(qlearning_predict,name_file)
     deep_analysis.clustering_analysis(qlearning_predict,'q_table.joblib',5,'page_rank')
     #deep_analysis.determine_optimal_clusters(qlearning_predict,name_file,20,'page_rank')
     
-
-def test():
-    q= Q_Graph()
-    # Uso de la función de búsqueda
-
-    # Ejemplo de uso de la función con identificadores de nodos explícitos
-    q.add_state(1,'A',2,-5)
-    q.add_state(2,'B',4,-5)
-    q.add_state(2,'C',3,-15)
-    q.add_state(3,'A',1,-5)
-    print(q.G.nodes.data(True))
-    print(q.G.edges.data(True))
-    q.find_state(4)
-    print(q.get_best_action(4,3))
-
 
 if __name__ == "__main__":
     training_iter=100000
     size=10
     start_position=(9,0) # (9,0)
     item_pickup=(1,1)# (1,1)
-    item_dropoff=(7,7) # (8,8)
+    item_dropoff=(7,7) # (7,7)
+    #zones_block=[(4,0),(4,1),(4,2),(4,3),(2,6),(2,7),(2,8),(2,9),(4,8),(5,8),(6,8),(7,6),(8,6),(9,6)]
     zones_block=[(4,0),(4,1),(4,2),(4,3),(2,6),(2,7),(2,8),(2,9),(4,8),(5,8),(6,8),(7,6),(8,6),(9,6)]
     #print(random_solutions())
     #print(qlearning_training(training_iter,size, item_pickup, item_dropoff, start_position, zones_block))
-    print(qlearning_predict(size, item_pickup, item_dropoff, start_position, zones_block,True,False,10000))
+    #print(qlearning_predict(size, item_pickup, item_dropoff, start_position, zones_block,True,True,10))
+    #print(qlearning_predict_update(size, item_pickup, item_dropoff, start_position, zones_block,True,100))
     #qtable_analysis('q_table.joblib')
-    #Analysis_Prediction(10000,size, item_pickup, item_dropoff, start_position, zones_block ,False)
-    #test()
+    Analysis_Prediction(10000,size, item_pickup, item_dropoff, start_position, zones_block ,False)

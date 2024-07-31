@@ -17,6 +17,12 @@ class Field:
         self.path_predicts= path_predicts
         self.save_state()
 
+    def get_path_status(self):
+        status_position_start= self.get_state_xy(self.position_start[0],self.position_start[1],self.item_in_car,self.item_pickup)
+        status_item_pickup= self.get_state_xy(self.item_pickup[0],self.item_pickup[1],self.item_in_car,self.item_pickup)
+        status_item_dropoff= self.get_state_xy(self.item_dropoff[0],self.item_dropoff[1],self.item_in_car,self.item_pickup)
+        return status_position_start,status_item_pickup,status_item_dropoff
+
     def get_number_of_states(self):
         return (self.size**4)*2 
     
@@ -24,13 +30,15 @@ class Field:
         actions_= []
         states_ = []
         rewards_ = []
+        positions_ = []
         for i in range(self.number_of_actions):
             reward,done,position,item_in_car,item_pickup = self.make_action_virtual(i)       
             state_var= self.get_state_xy(position[0],position[1],item_in_car,item_pickup )
             actions_.append(i)
             states_.append(state_var)
             rewards_.append(reward)
-        return states_,actions_,rewards_
+            positions_.append(position)
+        return states_,actions_,rewards_,positions_
     
     def get_explore_states(self):
         action_var= random.randint(0,5)
@@ -38,7 +46,7 @@ class Field:
         state_var= self.get_state_xy(position[0],position[1],item_in_car,item_pickup )
         return state_var,action_var,reward
     
-    def get_state_xy(self,pos_x,pos_y,item_in_car,item_pickup ):
+    def get_state_xy(self,pos_x,pos_y,item_in_car,item_pickup):
         state= pos_x*self.size*self.size*self.size*2
         state+= pos_y*self.size*self.size*2
         state+= item_pickup[0]*self.size*2
