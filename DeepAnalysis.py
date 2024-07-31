@@ -11,6 +11,12 @@ class ProcessDeep:
         pass
 
     def __reward_distribution(self,edges,method):
+        '''
+        Compute the reward distribution of a node
+        edges: list of edges
+        method: method to compute the reward distribution
+        return: reward distribution
+        '''
         if method == 'mean':
             return np.mean([edge[2]['reward'] for edge in edges])
         elif method == 'max':
@@ -23,6 +29,11 @@ class ProcessDeep:
             raise ValueError('Método no válido. Métodos válidos: mean, max, min, sum, path_reward_weighted')
 
     def compute_pagerank_with_weights(self,graph, alpha=0.85):
+        '''
+        Compute the PageRank of the nodes in the graph
+        graph: graph
+        alpha: damping factor
+        return: PageRank scores'''
         self.transform_rewards_to_weights(graph)
         pagerank_scores = nx.pagerank(graph, alpha=alpha, weight='weight')
         df = pd.DataFrame(list(pagerank_scores.items()), columns=['Node', 'PageRank'])
@@ -30,6 +41,10 @@ class ProcessDeep:
         return pagerank_scores
 
     def transform_rewards_to_weights(self,graph):
+        '''
+        Transform the rewards of the edges into weights
+        graph: graph
+        '''
         # Transform the negative rewards into weights
         min_reward = min(data['reward'] for _, _, data in graph.edges(data=True))
         # if the minimum reward is negative, we adjust all rewards to be non-negative
@@ -46,7 +61,13 @@ class ProcessDeep:
             if total_weight > 0:
                 for _, target, data in graph.in_edges(node, data=True):
                     data['weight'] /= total_weight
+
     def __node_rewards_back(self,graph):
+        '''
+        Compute the reward of the nodes in the graph
+        graph: graph
+        return: node rewards
+        '''
         leaf_nodes = {node for node in graph.nodes() if graph.out_degree(node) == 0}
         node_values = {}  
         count_values={} 
@@ -71,6 +92,13 @@ class ProcessDeep:
     def determine_optimal_clusters(self,q_graph_obj,
                                 qtable_filename_base='q_table.joblib'
                                 ,n_clusters=10,method='mean'):
+        '''
+        Determine the optimal number of clusters
+        q_graph_obj: QGraph object
+        qtable_filename_base: filename of the Q-table
+        n_clusters: number of clusters
+        method: method to compute the reward distribution
+        '''
         q_graph_learn= q_graph_obj.load_q_table(qtable_filename_base)
         node_rewards = {}
         if method != 'page_rank':
@@ -114,6 +142,13 @@ class ProcessDeep:
 
     def clustering_analysis(self,graph_obj,qtable_filename_base='q_table.joblib',
                             n_clusters=3,method='mean'):
+        '''
+        Perform clustering analysis
+        graph_obj: QGraph object
+        qtable_filename_base: filename of the Q-table
+        n_clusters: number of clusters
+        method: method to compute the reward distribution
+        '''
         # 1. We calculate the average reward for each node
         q_graph_learn= graph_obj.load_q_table(qtable_filename_base)
         node_rewards = {}
@@ -146,6 +181,11 @@ class ProcessDeep:
         plt.savefig('Deep_Analysis/Clusters.png', format='png', dpi=300)     
         
     def graphics_network(self,graph_obj,qtable_filename_base='q_table.joblib'):
+        '''
+        Visualize the learning graph
+        graph_obj: QGraph object
+        qtable_filename_base: filename of the Q-table
+        '''
         if qtable_filename_base != '':
             #self.empty_path('Deep_Analysis')
             q_graph_learn= graph_obj.load_q_table(qtable_filename_base)

@@ -3,12 +3,13 @@ import copy
 import numpy as np
 
 class Q_Graph:
-    def __init__(self):
+    def __init__(self,env):
         '''
         Create a graph
         env: enviroment where the graph is created
         '''
         self.G = nx.DiGraph()
+        self.enviroment= env
 
     def create_state(self,state_id,state_id_position,lst_action,lst_next_state_id, lst_reward,lst_position):
         '''
@@ -115,14 +116,14 @@ class Q_Graph:
         '''
         lst_position=[]
         lst_reward=[]
-        #env= copy.deepcopy(self.enviroment)
+        env= copy.deepcopy(self.enviroment)
         for idx in range(len(path_end)-1):
             node_i= self.G.nodes[path_end[idx]]
             edge_data = self.G.get_edge_data(path_end[idx], path_end[idx+1])
             action_i = edge_data.get('action', 0.0)
-            #env.position= node_i['position']
-            #reward,*_= env.make_action(action_i)
-            #lst_reward.append(reward)
+            env.position= node_i['position']
+            reward,*_= env.make_action(action_i)
+            lst_reward.append(reward)
             lst_position.append(node_i['position'])
         lst_position.append(self.G.nodes[path_end[-1]]['position'])    
         return lst_position,lst_reward
@@ -157,7 +158,6 @@ class Q_Graph:
         '''
         if init_state in self.G and final_state in self.G and middle_state in self.G:
             inverted_graph = self.G.copy()
-            # Encuentra el mínimo 'reward' negativo en el grafo invertido
             for u,v,data in inverted_graph.edges(data=True):
                 data['weight'] = 1/np.exp(data['reward'])
             path_to_pickup = nx.shortest_path(inverted_graph, init_state, middle_state, weight='weight')

@@ -1,29 +1,25 @@
-import random
-import numpy as np
 import pandas as pd
 from Games import Field
 from QLearning import QLearning
-from Q_Graphs import Q_Graph
 from DeepAnalysis import ProcessDeep
-import seaborn as sns
 import matplotlib.pyplot as plt
 
+def qlearning_training(training_iter,size, item_pickup, item_dropoff,
+                        start_position, zones_block):
+    '''
+    Training process of the Q-Learning algorithm--> This function first determine the 
+    best hyperparameters and then train the model and save the best hyperparameters,
+    after that running the training process with the best hyperparameters and save the q_table   
+    into the main folder
 
-def random_solutions():
-    size=10
-    item_pickup=(0,0)
-    item_dropoff=(9,9)
-    start_position=(9,0)
-    field = Field(size,item_pickup,item_dropoff,start_position)
-    done= False
-    steps=0
-    while not done:
-        action= random.randint(0,5)
-        reward,done=field.make_action(action) 
-        steps= steps+1
-    return steps    
-
-def qlearning_training(training_iter,size, item_pickup, item_dropoff, start_position, zones_block):
+    Parameters:
+    training_iter: number of iterations
+    size: size of the field
+    item_pickup: position of the item to pick up
+    item_dropoff: position of the item to drop off
+    start_position: initial position of the agent
+    zones_block: list of positions that are blocked
+    '''
     field = Field(size,item_pickup,item_dropoff,start_position,zones_block,'Episodes')
     field.empty_predict_data()
     qlearning= QLearning(field,'Training')
@@ -33,29 +29,72 @@ def qlearning_training(training_iter,size, item_pickup, item_dropoff, start_posi
     decay_epsilon = 0.01
     alpha_valores = [0.01,0.1] #Learning rate
     gamma_valores = [0.1,0.3,0.5,0.8] #Discount factor
-    hyperparams=qlearning.hyperparameters_training(training_iter,epsilon_valores,alpha_valores,gamma_valores,min_epsilon,decay_epsilon)
+    hyperparams=qlearning.hyperparameters_training(training_iter,epsilon_valores,
+                        alpha_valores,gamma_valores,min_epsilon,decay_epsilon)
     print('Training Process')
-    qlearning.training(training_iter,hyperparams['epsilon'],hyperparams['alpha'],hyperparams['gamma'],min_epsilon,decay_epsilon,True)
+    qlearning.training(training_iter,hyperparams['epsilon'],hyperparams['alpha'],
+                    hyperparams['gamma'],min_epsilon,decay_epsilon,True)
     qlearning.graphics_reward_training('Reward_Training')
     print('Training done')
     
-def qlearning_predict(size, item_pickup, item_dropoff, start_position, zones_block ,print_episode=False,re_training_bool=False,re_training_epi=1000):
+def qlearning_predict(size, item_pickup, item_dropoff, start_position, 
+                    zones_block ,print_episode=False,re_training_bool=False,re_training_epi=1000):
+    '''
+    Predict process of the Q-Learning algorithm where the model is loaded and the agent and determine
+    the best path to pick up and drop off the item.
+
+    Parameters:
+    size: size of the field
+    item_pickup: position of the item to pick up
+    item_dropoff: position of the item to drop off
+    start_position: initial position of the agent
+    zones_block: list of positions that are blocked
+    print_episode: print the episode
+    re_training_bool: retrain the model
+    re_training_epi: number of episodes to retrain the model'''
     field = Field(size,item_pickup,item_dropoff,start_position,zones_block,'Episodes')
     field.empty_predict_data()
     qlearning= QLearning(field,'Episodes')
-    steps,reward,status_all= qlearning.predict('q_table.joblib','best_hiperparameters.joblib',re_training_bool,re_training_epi,print_episode)
-    #field.graphics(status_all,'Path_Complete')
+    steps,reward,status_all= qlearning.predict('q_table.joblib','best_hiperparameters.joblib',
+                                            re_training_bool,re_training_epi,print_episode)
     return steps,reward,status_all
 
-def qlearning_predict_update(size, item_pickup, item_dropoff, start_position, zones_block ,print_episode=False,re_training_epi=1000):
+def qlearning_predict_dynamic(size, item_pickup, item_dropoff, start_position, 
+                            zones_block ,print_episode=False,re_training_epi=1000):
+    '''
+    Predict process of the Q-Learning algorithm where the model is loaded and the agent and determine
+    the best path to pick up and drop off the item in dynamic mode, for example if the agent determine 
+    that the asigned work is not in the memory, the agent will retrain the model and then predict the best path.
+    
+    Parameters:
+    size: size of the field
+    item_pickup: position of the item to pick up
+    item_dropoff: position of the item to drop off
+    start_position: initial position of the agent
+    zones_block: list of positions that are blocked
+    print_episode: print the episode
+    re_training_epi: number of episodes to retrain the model'''
     field = Field(size,item_pickup,item_dropoff,start_position,zones_block,'Episodes')
     field.empty_predict_data()
     qlearning= QLearning(field,'Episodes')
-    steps,reward,status_all= qlearning.dynamic_predict('q_table.joblib','best_hiperparameters.joblib',re_training_epi,print_episode)
-    #field.graphics(status_all,'Path_Complete')
+    steps,reward,status_all= qlearning.dynamic_predict('q_table.joblib','best_hiperparameters.joblib'
+                            ,re_training_epi,print_episode)
     return steps,reward,status_all
 
-def Analysis_Prediction(iterations,size, item_pickup, item_dropoff, start_position, zones_block ,print_episode=False):
+def Analysis_Prediction(iterations,size, item_pickup, item_dropoff, start_position,
+                zones_block ,print_episode=False):
+    '''
+    Analysis of the prediction process of the Q-Learning algorithm where the model is loaded and the agent and determine
+    the best path to pick up and drop off the item for a number of iterations in order to analyze the probability of
+    the positive rewards , total paths and the percentage of each path for specific number of iterations or samples
+    Parameters:
+    iterations: number of iterations
+    size: size of the field
+    item_pickup: position of the item to pick up
+    item_dropoff: position of the item to drop off
+    start_position: initial position of the agent
+    zones_block: list of positions that are blocked
+    print_episode: print the episode'''
     list_solutions=[]
     for i in range(iterations):
         #print('Iteration: ',i)
@@ -95,6 +134,12 @@ def Analysis_Prediction(iterations,size, item_pickup, item_dropoff, start_positi
 
 
 def qtable_analysis(name_file='q_table.joblib'):
+    '''
+    Analysis of the q_table of the Q-Learning algorithm is necessary to determine clusters into the q_table
+    and others ways to analyze how the agent is learning the best path to pick up and drop off the item.
+    Parameters:
+    name_file: name of the file that contains the q_table
+    '''
     size=10
     start_position=(9,0)
     item_pickup=(1,1)
@@ -111,14 +156,13 @@ def qtable_analysis(name_file='q_table.joblib'):
 if __name__ == "__main__":
     training_iter=100000
     size=10
-    start_position=(6,0) # (9,0)
+    start_position=(9,0) # (9,0)
     item_pickup=(1,1)# (1,1)
     item_dropoff=(7,7) # (7,7)
     #zones_block=[(4,0),(4,1),(4,2),(4,3),(2,6),(2,7),(2,8),(2,9),(4,8),(5,8),(6,8),(7,6),(8,6),(9,6)]
     zones_block=[(4,0),(4,1),(4,2),(4,3),(2,6),(2,7),(2,8),(2,9),(4,8),(5,8),(6,8),(7,6),(8,6),(9,6)]
-    #print(random_solutions())
-    #print(qlearning_training(training_iter,size, item_pickup, item_dropoff, start_position, zones_block))
-    #print(qlearning_predict(size, item_pickup, item_dropoff, start_position, zones_block,True,True,10))
-    print(qlearning_predict_update(size, item_pickup, item_dropoff, start_position, zones_block,True,100))
+    print(qlearning_training(training_iter,size, item_pickup, item_dropoff, start_position, zones_block))
+    #print(qlearning_predict(size, item_pickup, item_dropoff, start_position, zones_block,True,False,10))
+    print(qlearning_predict_dynamic(size, item_pickup, item_dropoff, start_position, zones_block,True,100))
     #qtable_analysis('q_table.joblib')
     #Analysis_Prediction(10000,size, item_pickup, item_dropoff, start_position, zones_block ,False)

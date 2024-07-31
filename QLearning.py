@@ -10,12 +10,17 @@ import gc
 
 class QLearning:
     def __init__(self,field,path_predicts='Episodes'):
+        ''' 
+        Constructor of the class QLearning
+        field: enviroment of the game
+        path_predicts: path to save the results of the predictions
+        '''
         #Field variables 
         self.field= field
         self.number_of_states= field.get_number_of_states()
         self.number_of_actions= field.number_of_actions
         #self.q_table= np.zeros((self.number_of_states,self.number_of_actions))
-        self.q_graph= Q_Graph()
+        self.q_graph= Q_Graph(self.field)
         #Training variables
         self.episodes=0 #number of episodes
         self.path_predicts=path_predicts #path to save the results of the predictions
@@ -62,13 +67,22 @@ class QLearning:
         self.reset_qtable()  
 
     def find_path_in_memory(self):
+        '''
+        Find the best path in memory
+        return: list of states and list of rewards
+        '''
         init_state,pickup_state,dropff_state= self.field.get_path_status()
         if self.q_graph.find_state_bool(init_state) and self.q_graph.find_state_bool(pickup_state) and \
             self.q_graph.find_state_bool(dropff_state):    
             return self.q_graph.find_best_path(init_state,pickup_state,dropff_state)
         else:
-            return [],[]   
+            return [],[] 
+        
     def find_all_path_in_memory(self):
+        '''
+        Find all the paths in memory
+        return: list of states and list of rewards
+        '''
         init_state,pickup_state,dropff_state= self.field.get_path_status()
         if self.q_graph.find_state_bool(init_state) and self.q_graph.find_state_bool(pickup_state) and \
             self.q_graph.find_state_bool(dropff_state):    
@@ -76,8 +90,17 @@ class QLearning:
         else:
             return []     
 
-    def dynamic_predict(self,qtable_filename_base='q_table.joblib',hyperparams_file='params'
-                    ,re_training_epi=1000, print_episode=False):
+    def dynamic_predict(self,qtable_filename_base='q_table.joblib',
+                        hyperparams_file='params',re_training_epi=1000, 
+                        print_episode=False):
+        '''
+        Predict the best path in memory
+        qtable_filename_base: name of the file of the qtable
+        hyperparams_file: name of the file of the hyperparameters
+        re_training_epi: number of episodes to retrain the model
+        print_episode: if True, print the episode
+        return: number of steps, total reward and list of states
+        '''
         if qtable_filename_base != '':
             self.reset_qtable()
             self.q_graph=self.load_q_table(qtable_filename_base)
@@ -107,9 +130,20 @@ class QLearning:
                 self.reset_qtable()
                 return steps,self.total_reward,states_path
         else:
-            return 0,0,[]   
-    def predict(self,qtable_filename_base='q_table.joblib',hyperparams_file='params',re_training=False 
+            return 0,0,[] 
+        
+    def predict(self,qtable_filename_base='q_table.joblib',
+                hyperparams_file='params',re_training=False 
                 ,re_training_epi=1000, print_episode=False):
+        '''
+        Predict the best path in memory
+        qtable_filename_base: name of the file of the qtable
+        hyperparams_file: name of the file of the hyperparameters
+        re_training: if True, retrain the model
+        re_training_epi: number of episodes to retrain the model
+        print_episode: if True, print the episode
+        return: number of steps, total reward and list of states
+        '''
         if qtable_filename_base != '':
             self.reset_qtable()
             self.q_graph=self.load_q_table(qtable_filename_base)
@@ -136,6 +170,13 @@ class QLearning:
             return 0,0,[]   
         
     def convergence(self, lst_qtable, threshold=0.01,steps_evaluations=5):
+        '''
+        Convergence of the model
+        lst_qtable: list of qtables
+        threshold: threshold of the convergence
+        steps_evaluations: number of steps to evaluate the convergence  
+        return: True if the model is converged, False otherwise
+        '''
         if len(lst_qtable) < steps_evaluations:
             return False
         avg_diff = np.sum(lst_qtable[-1] - sum(lst_qtable[-steps_evaluations:-1]) /(steps_evaluations-1))
@@ -143,8 +184,18 @@ class QLearning:
             return True
         return False
     
-    def learning_process(self,field,epsilon=0.1,alpha=0.1,gamma=0.6,min_epsilon=0.01
-                        ,decay_epsilon=0.999,print_episode=False):
+    def learning_process(self,field,epsilon=0.1,alpha=0.1,gamma=0.6,
+                        min_epsilon=0.01,decay_epsilon=0.999,print_episode=False):
+        '''
+        Learning process of the model
+        field: enviroment of the game
+        epsilon: exploration rate
+        alpha: learning rate
+        gamma: discount factor
+        min_epsilon: minimum value of epsilon
+        decay_epsilon: rate of decay of epsilon
+        print_episode: if True, print the episode
+        '''
         done= False
         steps=0
         self.total_reward=0
@@ -185,6 +236,16 @@ class QLearning:
     
     def hyperparameters_training(self,iterations,epsilon_values,alpha_values,
                                 gamma_values,min_epsilon,decay_epsilon):
+        '''
+        Hyperparameters training
+        iterations: number of episodes of training.
+        epsilon_values: list of exploration rates.
+        alpha_values: list of learning rates.
+        gamma_values: list of discount factors.
+        min_epsilon: minimum value of epsilon.
+        decay_epsilon: rate of decay of epsilon.
+        return: best hyperparameters
+        '''
         best_reward = float('inf')
         best_hiperparamters = {}
         iter_=0
@@ -204,19 +265,35 @@ class QLearning:
         return best_hiperparamters
     
     def reset_qtable(self):
-        del self.q_graph
-        gc.collect()
-        self.q_graph = Q_Graph()
+        '''
+        Reset the qtable of the model
+        '''
+        del self.q_graph #delete the qtable
+        gc.collect() #garbage collector
+        self.q_graph = Q_Graph(self.field) #create a new qtable
     
     def save_q_table(self,q_table, filename='q_table.joblib'):
+        '''
+        Save the qtable
+        q_table: qtable of the model
+        filename: name of the file to save the qtable
+        '''
         dump(q_table, filename)
         print(f'Saved to {filename}')
 
     def load_q_table(self,filename='q_table.joblib'):
+        '''
+        Load the qtable
+        filename: name of the file to load the qtable
+        return: qtable of the model
+        '''
         q_table = load(filename)
         return q_table
     
     def empty_path(self,path):
+        '''
+        Empty the path
+        '''
         for nombre in os.listdir(path):
             ruta_completa = os.path.join(path, nombre)
             try:
@@ -228,6 +305,10 @@ class QLearning:
                 print(f'Error {ruta_completa}. reason: {e}')
 
     def graphics_reward_training(self,name_fig):
+        '''
+        Graphics of the rewards of the training
+        name_fig: name of the figure
+        '''
         plt.plot(self.total_reward_training)
         plt.ylabel('Values')
         plt.xlabel('Iterations')
