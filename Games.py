@@ -5,6 +5,14 @@ import shutil
 import random
 class Field:
     def __init__(self,size,item_pickup,item_dropoff,start_position,zones_blocks=[],path_predicts='Episodes'):
+        '''
+        size: size of the field
+        item_pickup: position of the item to pickup
+        item_dropoff: position of the item to dropoff
+        start_position: initial position
+        zones_blocks: list of tuples with the position of the blocks
+        path_predicts: path to save the predictions
+        '''
         self.size = size
         self.item_pickup = item_pickup
         self.item_dropoff = item_dropoff
@@ -17,28 +25,60 @@ class Field:
         self.path_predicts= path_predicts
         self.save_state()
 
+    def get_path_status(self):
+        '''
+        Get the status of the path
+        return: status of the path
+        '''
+        status_position_start= self.get_state_xy(self.position_start[0],self.position_start[1],self.item_in_car,self.item_pickup)
+        status_item_pickup= self.get_state_xy(self.item_pickup[0],self.item_pickup[1],self.item_in_car,self.item_pickup)
+        status_item_dropoff= self.get_state_xy(self.item_dropoff[0],self.item_dropoff[1],self.item_in_car,self.item_pickup)
+        return status_position_start,status_item_pickup,status_item_dropoff
+
     def get_number_of_states(self):
+        '''
+        Get the number of states
+        return: number of states
+        '''
         return (self.size**4)*2 
     
     def get_possibles_states(self):
+        '''
+        Get the possibles states
+        return: list of possibles states
+        '''
         actions_= []
         states_ = []
         rewards_ = []
+        positions_ = []
         for i in range(self.number_of_actions):
             reward,done,position,item_in_car,item_pickup = self.make_action_virtual(i)       
             state_var= self.get_state_xy(position[0],position[1],item_in_car,item_pickup )
             actions_.append(i)
             states_.append(state_var)
             rewards_.append(reward)
-        return states_,actions_,rewards_
+            positions_.append(position)
+        return states_,actions_,rewards_,positions_
     
     def get_explore_states(self):
+        '''
+        Get the explore states
+        return: list of explore states and rewards 
+        '''
         action_var= random.randint(0,5)
         reward,done,position,item_in_car,item_pickup = self.make_action_virtual(action_var)       
         state_var= self.get_state_xy(position[0],position[1],item_in_car,item_pickup )
         return state_var,action_var,reward
     
-    def get_state_xy(self,pos_x,pos_y,item_in_car,item_pickup ):
+    def get_state_xy(self,pos_x,pos_y,item_in_car,item_pickup):
+        '''
+        Get the state of the position
+        pos_x: x position
+        pos_y: y position
+        item_in_car: item in the car
+        item_pickup: item to pickup
+        return: state
+        '''
         state= pos_x*self.size*self.size*self.size*2
         state+= pos_y*self.size*self.size*2
         state+= item_pickup[0]*self.size*2
@@ -48,6 +88,10 @@ class Field:
         return state
 
     def get_state(self):
+        '''
+        Get the state of the position
+        return: state
+        '''
         state= self.position[0]*self.size*self.size*self.size*2
         state+= self.position[1]*self.size*self.size*2
         state+= self.item_pickup[0]*self.size*2
@@ -57,9 +101,17 @@ class Field:
         return state    
     
     def save_state(self):
+        '''
+        Save the state
+        '''
         self.allposicions.append(self.position)
 
     def graphics(self,puntos,name_fig):
+        '''
+        Graphics the path
+        puntos: list of positions
+        name_fig: name of the figure
+        '''
         # Crear una cuadrícula de 10x10
         cuadricula = np.zeros((10, 10))
         # Marcar los puntos en la cuadrícula
@@ -91,6 +143,9 @@ class Field:
         plt.close()
 
     def empty_predict_data(self):
+        '''
+        Empty the predict data
+        '''
         path=self.path_predicts
         for nombre in os.listdir(path):
             ruta_completa = os.path.join(path, nombre)
@@ -103,11 +158,20 @@ class Field:
                 print(f'Error {ruta_completa}. reason: {e}')
 
     def block_zones_evaluation(self,position):
+        '''
+        Evaluate if the position is in a block zone
+        position: position to evaluate
+        return: True if the position is in a block zone, False otherwise'''
         if position in self.block_zones:
             return True
         return False
 
     def make_action(self,action):
+        '''
+        Make an action
+        action: action to make where in somes cases the position is updated
+        return: reward and done
+        '''
         (x,y) = self.position
         if action ==0: #down    
             if y==self.size-1:
@@ -163,6 +227,10 @@ class Field:
                 return 20,True 
             
     def make_action_virtual(self,action):
+            '''
+            Make an action in virtual mode that means that the position is not updated
+            action: action to make
+            return: reward, done, position, item_in_car, item_pickup'''
             (x,y) = self.position
             virtual_position = (x,y)
             item_in_car=self.item_in_car
