@@ -111,7 +111,7 @@ def qtable_analysis(name_file='q_table.joblib'):
 if __name__ == "__main__":
     training_iter=100000
     size=10
-    start_position=(9,0) # (9,0)
+    start_position=(6,0) # (9,0)
     item_pickup=(1,1)# (1,1)
     item_dropoff=(7,7) # (7,7)
     #zones_block=[(4,0),(4,1),(4,2),(4,3),(2,6),(2,7),(2,8),(2,9),(4,8),(5,8),(6,8),(7,6),(8,6),(9,6)]
@@ -119,6 +119,6 @@ if __name__ == "__main__":
     #print(random_solutions())
     #print(qlearning_training(training_iter,size, item_pickup, item_dropoff, start_position, zones_block))
     #print(qlearning_predict(size, item_pickup, item_dropoff, start_position, zones_block,True,True,10))
-    #print(qlearning_predict_update(size, item_pickup, item_dropoff, start_position, zones_block,True,100))
+    print(qlearning_predict_update(size, item_pickup, item_dropoff, start_position, zones_block,True,100))
     #qtable_analysis('q_table.joblib')
-    Analysis_Prediction(10000,size, item_pickup, item_dropoff, start_position, zones_block ,False)
+    #Analysis_Prediction(10000,size, item_pickup, item_dropoff, start_position, zones_block ,False)

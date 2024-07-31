@@ -126,6 +126,7 @@ class QLearning:
             else:
                 self.training(re_training_epi,self.epsilon,self.alpha,self.gamma,
                             self.min_epsilon,self.decay_epsilon,True)
+                self.q_graph=self.load_q_table(qtable_filename_base)
                 var,steps,__=self.learning_process(copy.deepcopy(self.field),self.epsilon,self.alpha,self.gamma
                                                     ,self.min_epsilon,self.decay_epsilon,print_episode)
                 states_path= var.allposicions
