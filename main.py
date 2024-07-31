@@ -95,8 +95,7 @@ def qtable_analysis(name_file='q_table.joblib'):
     field = Field(size,item_pickup,item_dropoff,start_position,zones_block,'Episodes')
     qlearning_predict= QLearning(field,'Episodes')
     deep_analysis= ProcessDeep()
-    #qlearning_predict.analysys_process_learning('q_table.joblib')
-    #deep_analysis.graphics_network(qlearning_predict,name_file)
+    deep_analysis.graphics_network(qlearning_predict,name_file)
     deep_analysis.clustering_analysis(qlearning_predict,'q_table.joblib',5,'page_rank')
     #deep_analysis.determine_optimal_clusters(qlearning_predict,name_file,20,'page_rank')
     
@@ -125,7 +124,6 @@ if __name__ == "__main__":
     zones_block=[(4,0),(4,1),(4,2),(4,3),(2,6),(2,7),(2,8),(2,9),(4,8),(5,8),(6,8),(7,6),(8,6),(9,6)]
     #print(random_solutions())
     #print(qlearning_training(training_iter,size, item_pickup, item_dropoff, start_position, zones_block))
-    print(qlearning_predict(size, item_pickup, item_dropoff, start_position, zones_block,True,True,100))
+    print(qlearning_predict(size, item_pickup, item_dropoff, start_position, zones_block,True,False,100))
     #qtable_analysis('q_table.joblib')
     #Analysis_Prediction(10000,size, item_pickup, item_dropoff, start_position, zones_block ,False)
-    #test()
