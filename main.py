@@ -125,7 +125,7 @@ if __name__ == "__main__":
     zones_block=[(4,0),(4,1),(4,2),(4,3),(2,6),(2,7),(2,8),(2,9),(4,8),(5,8),(6,8),(7,6),(8,6),(9,6)]
     #print(random_solutions())
     #print(qlearning_training(training_iter,size, item_pickup, item_dropoff, start_position, zones_block))
-    print(qlearning_predict(size, item_pickup, item_dropoff, start_position, zones_block,True,False,10000))
+    print(qlearning_predict(size, item_pickup, item_dropoff, start_position, zones_block,True,True,100))
     #qtable_analysis('q_table.joblib')
     #Analysis_Prediction(10000,size, item_pickup, item_dropoff, start_position, zones_block ,False)
     #test()
